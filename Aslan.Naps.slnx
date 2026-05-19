@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aslan.Naps.Cli/Aslan.Naps.Cli.csproj" />
+    <Project Path="src/Aslan.Naps/Aslan.Naps.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aslan.Naps.Tests/Aslan.Naps.Tests.csproj" />
+  </Folder>
+</Solution>
