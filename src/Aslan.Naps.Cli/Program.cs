@@ -1,7 +1,7 @@
 using Aslan.Naps;
 using Aslan.Naps.Models;
 
-const string Version = "1.0.0";
+const string Version = "1.0.1";
 
 if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
 {
