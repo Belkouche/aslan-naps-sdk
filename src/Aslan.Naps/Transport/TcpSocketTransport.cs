@@ -62,19 +62,24 @@ public class TcpSocketTransport : ITerminalTransport
         // Read until '?' arrives.
         var sb = new StringBuilder();
         var buf = new byte[4096];
-        while (true)
+        try
         {
-            var read = await stream.ReadAsync(buf, 0, buf.Length, cts.Token);
-            if (read == 0) break;
-            sb.Append(Encoding.ASCII.GetString(buf, 0, read));
-            if (sb.ToString().Contains('?')) break;
+            while (true)
+            {
+                var read = await stream.ReadAsync(buf, 0, buf.Length, cts.Token);
+                if (read == 0) break;
+                sb.Append(Encoding.ASCII.GetString(buf, 0, read));
+                if (sb.ToString().Contains('?')) break;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw new TimeoutException($"No response from terminal within {timeoutMs}ms");
         }
 
-        // Terminal uses '?' as end-of-message terminator. '!' appears inside receipt lines as a separator.
-        // Strip all '!' (receipt separators) and replace trailing '?' with '!' so LtvProtocol.ParseMessage
-        // and NapsClient.ExtractLastMessage see a single clean message.
-        var normalised = sb.ToString().Replace("!", "").TrimEnd('?') + "!";
-        return normalised;
+        // '!' appears inside receipt lines as a separator — strip them.
+        // Replace trailing '?' with '!' so LtvProtocol.ParseMessage sees a standard terminator.
+        return sb.ToString().Replace("!", "").TrimEnd('?') + "!";
     }
 
     public void Dispose() => Disconnect();

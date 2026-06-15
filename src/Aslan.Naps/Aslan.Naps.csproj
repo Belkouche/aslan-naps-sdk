@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Aslan.Naps</PackageId>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Authors>Aslan Fintech</Authors>
     <Description>Unified NAPS payment terminal SDK — Sunmi P2/P3 (TCP) and Ingenico Lane/3000 (USB serial)</Description>
     <PackageTags>naps;payment;pos;terminal;sunmi;ingenico;lane3000;morocco</PackageTags>
