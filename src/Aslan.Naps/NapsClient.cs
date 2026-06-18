@@ -177,13 +177,14 @@ public class NapsClient : IDisposable
     {
         var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
         var cardNumber = fields.GetValueOrDefault(LtvProtocol.TagNcar);
+        var dp = fields.GetValueOrDefault(LtvProtocol.TagDp);
 
         return new PaymentResult
         {
             IsSuccess = isApproved && LtvProtocol.IsApproved(cr),
             IsCancelled = cr == "099",
             ResponseCode = cr,
-            ResponseMessage = fields.GetValueOrDefault(LtvProtocol.TagDp),
+            ResponseMessage = dp,
             AuthorizationNumber = fields.GetValueOrDefault(LtvProtocol.TagNa),
             CardNumber = cardNumber != null ? LtvProtocol.MaskPan(cardNumber) : null,
             Stan = fields.GetValueOrDefault(LtvProtocol.TagStan),
@@ -191,7 +192,8 @@ public class NapsClient : IDisposable
             TerminalId = fields.GetValueOrDefault("020"),
             TransactionDate = fields.GetValueOrDefault(LtvProtocol.TagDa),
             TransactionTime = fields.GetValueOrDefault(LtvProtocol.TagHe),
-            ReceiptText = fields.GetValueOrDefault(LtvProtocol.TagDp),
+            ReceiptText = dp,
+            ReceiptLines = dp != null ? ReceiptParser.Parse(dp) : null,
             CardholderName = fields.GetValueOrDefault(LtvProtocol.TagNprt),
             CardScheme = fields.GetValueOrDefault("018"),
             Rrn = fields.GetValueOrDefault("014"),

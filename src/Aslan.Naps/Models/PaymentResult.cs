@@ -1,3 +1,5 @@
+using Aslan.Naps.Protocol;
+
 namespace Aslan.Naps.Models;
 
 public record PaymentResult
@@ -19,6 +21,12 @@ public record PaymentResult
     public string? CardholderName { get; init; }
     public string? MerchantName { get; init; }
     public string? MerchantCity { get; init; }
+
+    /// <summary>
+    /// Structured receipt lines parsed from the DP (010) field.
+    /// Populated when the terminal returns a receipt; null otherwise.
+    /// </summary>
+    public List<ReceiptLine>? ReceiptLines { get; init; }
 
     public bool ShouldRetry => ResponseCode is "909" or "911" or "T01";
 }

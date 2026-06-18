@@ -58,28 +58,50 @@ public class TcpSocketTransport : ITerminalTransport
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeoutMs);
 
-        // The terminal uses '?' as end-of-message terminator (not '!').
-        // Read until '?' arrives.
-        var sb = new StringBuilder();
+        var rawBytes = new List<byte>(4096);
         var buf = new byte[4096];
+
+        // First read — block until data arrives (outer timeout via cts)
+        int count;
         try
         {
-            while (true)
-            {
-                var read = await stream.ReadAsync(buf, 0, buf.Length, cts.Token);
-                if (read == 0) break;
-                sb.Append(Encoding.ASCII.GetString(buf, 0, read));
-                if (sb.ToString().Contains('?')) break;
-            }
+            count = await stream.ReadAsync(buf, 0, buf.Length, cts.Token);
         }
         catch (OperationCanceledException)
         {
             throw new TimeoutException($"No response from terminal within {timeoutMs}ms");
         }
 
-        // '!' appears inside receipt lines as a separator — strip them.
-        // Replace trailing '?' with '!' so LtvProtocol.ParseMessage sees a standard terminator.
-        return sb.ToString().Replace("!", "").TrimEnd('?') + "!";
+        if (count == 0)
+            throw new IOException("Connection closed before response");
+
+        rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
+        var done = buf[count - 1] == (byte)'?';
+
+        // Drain remaining chunks with a 1-second inter-chunk silence fallback.
+        // Some terminal responses (cancel, decline) omit the '?' terminator.
+        while (!done)
+        {
+            using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            drainCts.CancelAfter(TimeSpan.FromSeconds(1));
+            try
+            {
+                count = await stream.ReadAsync(buf, 0, buf.Length, drainCts.Token);
+                if (count == 0) break;
+                rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
+                done = buf[count - 1] == (byte)'?';
+            }
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+            {
+                break; // 1-second silence — treat as end-of-message
+            }
+        }
+
+        var response = Encoding.ASCII.GetString(rawBytes.ToArray());
+
+        // Strip '!' separators inside receipt lines; replace trailing '?' with '!'
+        // so LtvProtocol.ParseMessage sees the standard message terminator.
+        return response.Replace("!", "").TrimEnd('?') + "!";
     }
 
     public void Dispose() => Disconnect();

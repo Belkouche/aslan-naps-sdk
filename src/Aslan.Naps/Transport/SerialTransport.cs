@@ -1,5 +1,6 @@
 using System.IO.Ports;
 using Aslan.Naps.Models;
+using Aslan.Naps.Polyfills;
 using Aslan.Naps.Protocol;
 
 namespace Aslan.Naps.Transport;
