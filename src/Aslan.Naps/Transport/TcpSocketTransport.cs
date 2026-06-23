@@ -80,9 +80,10 @@ public class TcpSocketTransport : ITerminalTransport
 
         // Drain remaining chunks with a 1-second inter-chunk silence fallback.
         // Some terminal responses (cancel, decline) omit the '?' terminator.
+        // Link to outer cts so the drain cannot extend past the overall operation deadline.
         while (!done)
         {
-            using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
             drainCts.CancelAfter(TimeSpan.FromSeconds(1));
             try
             {

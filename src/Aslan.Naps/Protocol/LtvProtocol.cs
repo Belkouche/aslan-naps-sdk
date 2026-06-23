@@ -24,6 +24,7 @@ public static class LtvProtocol
     public const string TagHe = "015";    // Time HHMMSS
     public const string TagNprt = "016";  // Cardholder name
     public const string TagDaex = "017";  // Card expiry YYMM
+    public const string TagRrn = "019";   // Retrieval Reference Number (mapped from binary 0x14)
 
     // Message types
     public const string TmPayment = "001";

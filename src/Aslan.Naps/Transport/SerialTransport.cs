@@ -71,8 +71,9 @@ public class SerialTransport : ITerminalTransport
         var txnType = tm switch
         {
             "001" => BinaryTlvProtocol.TxnTypeSale,
-            "003" => BinaryTlvProtocol.TxnTypeReversal,
-            _ => BinaryTlvProtocol.TxnTypeSale
+            "003" => BinaryTlvProtocol.TxnTypeCancellation,
+            "002" => BinaryTlvProtocol.TxnTypeConfirmation,
+            _ => throw new NotSupportedException($"Message type TM={tm} is not supported over USB serial")
         };
         var amount = fields.GetValueOrDefault(LtvProtocol.TagMt, "0");
         var reference = fields.GetValueOrDefault(LtvProtocol.TagStan, fields.GetValueOrDefault(LtvProtocol.TagNs, ""));
@@ -198,7 +199,7 @@ public class SerialTransport : ITerminalTransport
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagStan, out var stan))
             parts.Add(LtvProtocol.Tlv(LtvProtocol.TagStan, stan));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagRrn, out var rrn))
-            parts.Add(LtvProtocol.Tlv("014", rrn));
+            parts.Add(LtvProtocol.Tlv(LtvProtocol.TagRrn, rrn));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagTerminalId, out var tid))
             parts.Add(LtvProtocol.Tlv("020", tid));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagApprovalCode, out var ac))

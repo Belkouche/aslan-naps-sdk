@@ -96,9 +96,16 @@ public class NapsClient : IDisposable
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmCancellation, ncai, ns,
             extraFields: new[] { (LtvProtocol.TagStan, stan) });
 
-        var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
-        var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
-        return MapToResult(fields, false);
+        try
+        {
+            var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
+            var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+            return MapToResult(fields, false);
+        }
+        catch (TimeoutException)
+        {
+            return new PaymentResult { ResponseCode = "TIMEOUT", ResponseMessage = "Cancel request timed out" };
+        }
     }
 
     public async Task<TestResult> NetworkTestAsync(CancellationToken ct = default)
@@ -182,7 +189,7 @@ public class NapsClient : IDisposable
         return new PaymentResult
         {
             IsSuccess = isApproved && LtvProtocol.IsApproved(cr),
-            IsCancelled = cr == "099",
+            IsCancelled = cr is "280" or "480" or "099",
             ResponseCode = cr,
             ResponseMessage = dp,
             AuthorizationNumber = fields.GetValueOrDefault(LtvProtocol.TagNa),
@@ -196,7 +203,7 @@ public class NapsClient : IDisposable
             ReceiptLines = dp != null ? ReceiptParser.Parse(dp) : null,
             CardholderName = fields.GetValueOrDefault(LtvProtocol.TagNprt),
             CardScheme = fields.GetValueOrDefault("018"),
-            Rrn = fields.GetValueOrDefault("014"),
+            Rrn = fields.GetValueOrDefault(LtvProtocol.TagRrn),
         };
     }
 

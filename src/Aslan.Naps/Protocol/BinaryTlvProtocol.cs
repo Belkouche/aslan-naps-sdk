@@ -24,6 +24,8 @@ public static class BinaryTlvProtocol
 
     public const string TxnTypeSale = "01";
     public const string TxnTypeReversal = "02";
+    public const string TxnTypeConfirmation = "03";
+    public const string TxnTypeCancellation = "04";
 
     public static byte[] BuildRequest(string txnType, string amount, string reference)
     {
@@ -48,7 +50,7 @@ public static class BinaryTlvProtocol
         var fields = new Dictionary<byte, string>();
         var offset = 0;
 
-        while (offset < data.Length - 2)
+        while (offset + 2 < data.Length)
         {
             var tag = data[offset++];
             if (offset + 1 >= data.Length) break;
