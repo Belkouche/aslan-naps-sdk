@@ -71,7 +71,7 @@ public static class LtvProtocol
             foreach (var (tag, value) in extraFields)
                 fields.Add(Tlv(tag, value));
 
-        return string.Concat(fields) + "!";
+        return string.Concat(fields);
     }
 
     public static string BuildConfirmation(string stan, string ncai = "0100001", string ns = "000001")
@@ -86,7 +86,7 @@ public static class LtvProtocol
             Tlv(TagDa, now.ToString("ddMMyyyy")),
             Tlv(TagHe, now.ToString("HHmmss"))
         };
-        return string.Concat(fields) + "!";
+        return string.Concat(fields);
     }
 
     public static Dictionary<string, string> ParseMessage(string raw)

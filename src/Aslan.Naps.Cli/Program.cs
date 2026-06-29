@@ -74,6 +74,19 @@ if (command == "ports")
     return 0;
 }
 
+if (command == "debug")
+{
+    var dbgAmt = arg1 != null && decimal.TryParse(arg1, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var da) ? da : 1.00m;
+    var dbgCentimes = (long)Math.Round(dbgAmt * 100);
+    var dbgMsg = Aslan.Naps.Protocol.LtvProtocol.BuildMessage(Aslan.Naps.Protocol.LtvProtocol.TmPayment, "0100001", "000001", dbgCentimes);
+    Console.WriteLine($"RAW MESSAGE ({dbgMsg.Length} chars):");
+    Console.WriteLine(dbgMsg);
+    Console.WriteLine();
+    Console.WriteLine("HEX:");
+    Console.WriteLine(BitConverter.ToString(System.Text.Encoding.UTF8.GetBytes(dbgMsg)));
+    return 0;
+}
+
 using var client = new NapsClient(options);
 try
 {
