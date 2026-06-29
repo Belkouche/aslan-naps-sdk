@@ -24,7 +24,8 @@ public static class LtvProtocol
     public const string TagHe = "015";    // Time HHMMSS
     public const string TagNprt = "016";  // Cardholder name
     public const string TagDaex = "017";  // Card expiry YYMM
-    public const string TagRrn = "019";   // Retrieval Reference Number (mapped from binary 0x14)
+    public const string TagDatr = "018";  // Transaction date DDMMYYYY (required by terminal)
+    public const string TagHetr = "019";  // Transaction time HHMMSS (required by terminal)
 
     // Message types
     public const string TmPayment = "001";
@@ -59,6 +60,8 @@ public static class LtvProtocol
 
         fields.Add(Tlv(TagDa, now.ToString("ddMMyyyy")));
         fields.Add(Tlv(TagHe, now.ToString("HHmmss")));
+        fields.Add(Tlv(TagDatr, now.ToString("ddMMyyyy")));
+        fields.Add(Tlv(TagHetr, now.ToString("HHmmss")));
 
         if (extraFields != null)
             foreach (var (tag, value) in extraFields)

@@ -199,7 +199,7 @@ public class SerialTransport : ITerminalTransport
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagStan, out var stan))
             parts.Add(LtvProtocol.Tlv(LtvProtocol.TagStan, stan));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagRrn, out var rrn))
-            parts.Add(LtvProtocol.Tlv(LtvProtocol.TagRrn, rrn));
+            parts.Add(LtvProtocol.Tlv("020", rrn));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagTerminalId, out var tid))
             parts.Add(LtvProtocol.Tlv("020", tid));
         if (binaryFields.TryGetValue(BinaryTlvProtocol.TagApprovalCode, out var ac))

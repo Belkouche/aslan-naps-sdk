@@ -51,7 +51,7 @@ public class TcpSocketTransport : ITerminalTransport
 
         var stream = _client.GetStream();
 
-        var bytes = Encoding.ASCII.GetBytes(message);
+        var bytes = Encoding.UTF8.GetBytes(message);
         await stream.WriteAsync(bytes, 0, bytes.Length, ct);
         await stream.FlushAsync(ct);
 
@@ -98,11 +98,11 @@ public class TcpSocketTransport : ITerminalTransport
             }
         }
 
-        var response = Encoding.ASCII.GetString(rawBytes.ToArray());
+        var response = Encoding.UTF8.GetString(rawBytes.ToArray());
 
-        // Strip '!' separators inside receipt lines; replace trailing '?' with '!'
-        // so LtvProtocol.ParseMessage sees the standard message terminator.
-        return response.Replace("!", "").TrimEnd('?') + "!";
+        // Strip trailing '?' terminator, keep content intact, re-append '!' for LtvProtocol.
+        var qPos = response.LastIndexOf('?');
+        return (qPos >= 0 ? response.Substring(0, qPos) : response) + "!";
     }
 
     public void Dispose() => Disconnect();

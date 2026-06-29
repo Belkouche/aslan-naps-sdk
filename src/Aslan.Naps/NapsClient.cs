@@ -203,7 +203,7 @@ public class NapsClient : IDisposable
             ReceiptLines = dp != null ? ReceiptParser.Parse(dp) : null,
             CardholderName = fields.GetValueOrDefault(LtvProtocol.TagNprt),
             CardScheme = fields.GetValueOrDefault("018"),
-            Rrn = fields.GetValueOrDefault(LtvProtocol.TagRrn),
+            Rrn = null,
         };
     }
 
