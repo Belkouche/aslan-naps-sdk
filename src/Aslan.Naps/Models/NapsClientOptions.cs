@@ -8,7 +8,7 @@ public class NapsClientOptions
     // --- TCP Socket options (Sunmi P2/P3) ---
     public string? TcpHost { get; set; }
     public int TcpPort { get; set; } = 4444;
-    public int TcpConnectTimeoutMs { get; set; } = 5000;
+    public int TcpConnectTimeoutMs { get; set; } = 120_000;
 
     // --- USB Serial options (Lane/3000) ---
     /// <summary>Serial port name. Null = auto-discover by Ingenico Vendor ID.</summary>
