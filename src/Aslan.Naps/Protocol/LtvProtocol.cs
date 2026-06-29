@@ -50,7 +50,7 @@ public static class LtvProtocol
         var fields = new List<string> { Tlv(TagTm, tm) };
 
         if (amountCentimes.HasValue)
-            fields.Add(Tlv(TagMt, amountCentimes.Value.ToString().PadLeft(12, '0')));
+            fields.Add(Tlv(TagMt, amountCentimes.Value.ToString()));
 
         fields.Add(Tlv(TagNcai, ncai));
         fields.Add(Tlv(TagNs, ns));
