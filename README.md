@@ -105,33 +105,52 @@ else
 using Aslan.Naps;
 using Aslan.Naps.Models;
 
-// --- Sunmi P2/P3 over TCP ---
 using var client = new NapsClient(new NapsClientOptions
 {
     Transport = TransportType.TcpSocket,
     TcpHost   = "192.168.25.45",   // terminal IP address
     TcpPort   = 4444,              // default NAPS port
 
-    // Optional — identify your register/cashier in NAPS logs
     RegisterId = "01",
     CashierId  = "00001",
 
-    // Optional — override timeouts (milliseconds)
     TcpConnectTimeoutMs  = 120_000,  // 2 min (default)
     PaymentTimeoutMs     = 120_000,  // 2 min (default)
     TestTimeoutMs        =  30_000,  // 30 s  (default)
     ReferencingTimeoutMs =  60_000,  // 1 min (default)
 });
 
-// Connect (throws on failure)
-await client.ConnectAsync();
+// ── Connect ──────────────────────────────────────────────────────────────────
+try
+{
+    await client.ConnectAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Could not reach terminal: {ex.Message}");
+    return;
+}
 
-// ── Payment ─────────────────────────────────────────────────────────────────
-var pay = await client.PayAsync(75.50m);
+// ── Payment ──────────────────────────────────────────────────────────────────
+PaymentResult pay;
+try
+{
+    pay = await client.PayAsync(75.50m);
+}
+catch (TimeoutException)
+{
+    Console.WriteLine("Payment timed out — no response from terminal");
+    return;
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Payment error: {ex.Message}");
+    return;
+}
 
 if (pay.IsSuccess)
 {
-    Console.WriteLine($"Approved");
+    Console.WriteLine("Approved");
     Console.WriteLine($"  Auth # : {pay.AuthorizationNumber}");
     Console.WriteLine($"  STAN   : {pay.Stan}");
     Console.WriteLine($"  Card   : {pay.CardNumber}");
@@ -151,45 +170,59 @@ else
         Console.WriteLine("Transient error — safe to retry");
 }
 
-// ── Void a transaction by STAN ───────────────────────────────────────────────
+// ── Void by STAN ─────────────────────────────────────────────────────────────
 if (pay.Stan != null)
 {
-    var cancel = await client.CancelAsync(stan: pay.Stan);
-    Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
+    try
+    {
+        var cancel = await client.CancelAsync(stan: pay.Stan);
+        Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Cancel error: {ex.Message}");
+    }
 }
 
-// ── Other operations (all on the same open connection) ───────────────────────
+// ── Other operations ─────────────────────────────────────────────────────────
+try
+{
+    var dup = await client.DuplicateReceiptAsync();
+    Console.WriteLine(dup.ReceiptText);
 
-// Reprint last receipt
-var dup = await client.DuplicateReceiptAsync();
-Console.WriteLine(dup.ReceiptText);
+    var totals = await client.TotalsAsync();
+    Console.WriteLine(totals.ReceiptText);
 
-// End-of-day totals
-var totals = await client.TotalsAsync();
-Console.WriteLine(totals.ReceiptText);
+    var refResult = await client.ReferencingAsync();
+    Console.WriteLine(refResult.IsSuccess ? "Parameters loaded" : "Referencing failed");
 
-// Load merchant parameters from terminal
-var refResult = await client.ReferencingAsync();
-Console.WriteLine(refResult.IsSuccess ? "Parameters loaded" : "Referencing failed");
+    var test = await client.NetworkTestAsync();
+    Console.WriteLine(test.Message);   // "Network OK" or error detail
 
-// Ping the terminal
-var test = await client.NetworkTestAsync();
-Console.WriteLine(test.Message);   // "Network OK" or error detail
-
-// Reset PIN pad module
-await client.ResetPinPadAsync();
+    await client.ResetPinPadAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Terminal error: {ex.Message}");
+}
 
 // ── Ingenico Lane/3000 (USB) ─────────────────────────────────────────────────
 
 // Static utilities — no connection required
-string?  detected = NapsClient.FindPort();   // auto-detect Ingenico port
-string[] all      = NapsClient.ListPorts();  // list all serial ports
+string?  detected = NapsClient.FindPort();
+string[] all      = NapsClient.ListPorts();
 
-// Auto-detect port:
-using var usb = new NapsClient(TransportType.UsbSerial);
-await usb.ConnectAsync();
-var usbPay = await usb.PayAsync(20.00m);
-Console.WriteLine(usbPay.IsSuccess ? $"Approved {usbPay.AuthorizationNumber}" : $"RC={usbPay.ResponseCode}");
+try
+{
+    using var usb = new NapsClient(TransportType.UsbSerial);
+    await usb.ConnectAsync();
+    var usbPay = await usb.PayAsync(20.00m);
+    Console.WriteLine(usbPay.IsSuccess ? $"Approved {usbPay.AuthorizationNumber}" : $"RC={usbPay.ResponseCode}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"USB terminal error: {ex.Message}");
+}
 ```
 
 ---
