@@ -105,32 +105,60 @@ else
 using Aslan.Naps;
 using Aslan.Naps.Models;
 
-// --- Sunmi P2/P3 ---
+// --- Sunmi P2/P3 over TCP ---
 using var client = new NapsClient(new NapsClientOptions
 {
     Transport = TransportType.TcpSocket,
-    TcpHost   = "192.168.1.100",
-    TcpPort   = 4444,
+    TcpHost   = "192.168.25.45",   // terminal IP address
+    TcpPort   = 4444,              // default NAPS port
 
     // Optional — identify your register/cashier in NAPS logs
     RegisterId = "01",
     CashierId  = "00001",
 
     // Optional — override timeouts (milliseconds)
-    PaymentTimeoutMs    = 120_000,  // 2 min (default)
-    TestTimeoutMs       =  30_000,  // 30 s  (default)
-    ReferencingTimeoutMs=  60_000,  // 1 min (default)
+    TcpConnectTimeoutMs  = 120_000,  // 2 min (default)
+    PaymentTimeoutMs     = 120_000,  // 2 min (default)
+    TestTimeoutMs        =  30_000,  // 30 s  (default)
+    ReferencingTimeoutMs =  60_000,  // 1 min (default)
 });
 
+// Connect (throws on failure)
 await client.ConnectAsync();
 
-// Payment
+// ── Payment ─────────────────────────────────────────────────────────────────
 var pay = await client.PayAsync(75.50m);
-Console.WriteLine(pay.IsSuccess ? $"Approved {pay.AuthorizationNumber}" : $"Failed RC={pay.ResponseCode}");
 
-// Void a previous transaction by STAN
-var cancel = await client.CancelAsync(stan: pay.Stan!);
-Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
+if (pay.IsSuccess)
+{
+    Console.WriteLine($"Approved");
+    Console.WriteLine($"  Auth # : {pay.AuthorizationNumber}");
+    Console.WriteLine($"  STAN   : {pay.Stan}");
+    Console.WriteLine($"  Card   : {pay.CardNumber}");
+    Console.WriteLine($"  Date   : {pay.TransactionDate} {pay.TransactionTime}");
+    if (pay.ReceiptLines != null)
+        foreach (var line in pay.ReceiptLines)
+            Console.WriteLine(line.Text);
+}
+else if (pay.IsCancelled)
+{
+    Console.WriteLine("Cancelled by cardholder");
+}
+else
+{
+    Console.WriteLine($"Declined — RC={pay.ResponseCode} {pay.ResponseMessage}");
+    if (pay.ShouldRetry)
+        Console.WriteLine("Transient error — safe to retry");
+}
+
+// ── Void a transaction by STAN ───────────────────────────────────────────────
+if (pay.Stan != null)
+{
+    var cancel = await client.CancelAsync(stan: pay.Stan);
+    Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
+}
+
+// ── Other operations (all on the same open connection) ───────────────────────
 
 // Reprint last receipt
 var dup = await client.DuplicateReceiptAsync();
@@ -141,19 +169,27 @@ var totals = await client.TotalsAsync();
 Console.WriteLine(totals.ReceiptText);
 
 // Load merchant parameters from terminal
-var ref_ = await client.ReferencingAsync();
-Console.WriteLine(ref_.IsSuccess ? "Parameters loaded" : "Referencing failed");
+var refResult = await client.ReferencingAsync();
+Console.WriteLine(refResult.IsSuccess ? "Parameters loaded" : "Referencing failed");
 
 // Ping the terminal
 var test = await client.NetworkTestAsync();
-Console.WriteLine(test.Message);  // "Network OK" or error
+Console.WriteLine(test.Message);   // "Network OK" or error detail
 
 // Reset PIN pad module
 await client.ResetPinPadAsync();
 
-// Static port utilities (USB only)
-string?  port  = NapsClient.FindPort();   // auto-detect Ingenico port
-string[] ports = NapsClient.ListPorts();  // list all serial ports
+// ── Ingenico Lane/3000 (USB) ─────────────────────────────────────────────────
+
+// Static utilities — no connection required
+string?  detected = NapsClient.FindPort();   // auto-detect Ingenico port
+string[] all      = NapsClient.ListPorts();  // list all serial ports
+
+// Auto-detect port:
+using var usb = new NapsClient(TransportType.UsbSerial);
+await usb.ConnectAsync();
+var usbPay = await usb.PayAsync(20.00m);
+Console.WriteLine(usbPay.IsSuccess ? $"Approved {usbPay.AuthorizationNumber}" : $"RC={usbPay.ResponseCode}");
 ```
 
 ---
@@ -194,7 +230,7 @@ static string[]  NapsClient.ListPorts()
 | `Transport` | `TransportType` | `UsbSerial` | `TcpSocket` or `UsbSerial` |
 | `TcpHost` | `string?` | `null` | Terminal IP address (TCP only) |
 | `TcpPort` | `int` | `4444` | TCP port (TCP only) |
-| `TcpConnectTimeoutMs` | `int` | `5000` | TCP connect timeout ms |
+| `TcpConnectTimeoutMs` | `int` | `120000` | TCP connect timeout ms |
 | `SerialPortName` | `string?` | `null` | Port name — `null` = auto-detect (USB only) |
 | `SerialBaudRate` | `int` | `115200` | Serial baud rate (USB only) |
 | `RegisterId` | `string` | `"01"` | 2-digit register ID for NAPS NCAI field |
@@ -258,6 +294,7 @@ dotnet run --project src/Aslan.Naps.Cli -c Release -- <command> [options]
 | `duplicate` | Reprint last receipt |
 | `reset` | Reset the PIN pad module |
 | `ports` | List available serial ports (USB only) |
+| `debug [amount]` | Print raw TLV message and hex bytes (no terminal needed) |
 
 ### Transport flags
 
