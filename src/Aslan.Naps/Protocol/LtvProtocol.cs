@@ -50,7 +50,11 @@ public static class LtvProtocol
         var fields = new List<string> { Tlv(TagTm, tm) };
 
         if (amountCentimes.HasValue)
+        {
+            if (amountCentimes.Value < 0 || amountCentimes.Value > 999_999_999_999L)
+                throw new ArgumentOutOfRangeException(nameof(amountCentimes), "Amount must be between 0 and 9,999,999,999.99 MAD");
             fields.Add(Tlv(TagMt, amountCentimes.Value.ToString()));
+        }
 
         fields.Add(Tlv(TagNcai, ncai));
         fields.Add(Tlv(TagNs, ns));
