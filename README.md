@@ -343,21 +343,21 @@ dotnet run --project src/Aslan.Naps.Cli -c Release -- <command> [options]
 
 ```bash
 # Sunmi P2/P3 — pay 150 MAD
-lane3000 pay 150.00 --tcp 192.168.1.100:4444
+aslan-naps pay 150.00 --tcp 192.168.1.100:4444
 
 # Ingenico Lane/3000 — pay (auto-detect USB port)
-lane3000 pay 150.00
+aslan-naps pay 150.00
 
 # Force a specific port
-lane3000 pay 150.00 --port COM3
-lane3000 pay 150.00 --port /dev/cu.usbmodem1201
+aslan-naps pay 150.00 --port COM3
+aslan-naps pay 150.00 --port /dev/cu.usbmodem1201
 
 # List ports, then ping
-lane3000 ports
-lane3000 test --tcp 192.168.1.100:4444
+aslan-naps ports
+aslan-naps test --tcp 192.168.1.100:4444
 
 # Void by STAN
-lane3000 cancel 000123 --tcp 192.168.1.100:4444
+aslan-naps cancel 000123 --tcp 192.168.1.100:4444
 ```
 
 ---

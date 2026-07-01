@@ -4,9 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyName>lane3000</AssemblyName>
+    <AssemblyName>aslan-naps</AssemblyName>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>lane3000</ToolCommandName>
+    <ToolCommandName>aslan-naps</ToolCommandName>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Aslan.Naps/Aslan.Naps.csproj" />

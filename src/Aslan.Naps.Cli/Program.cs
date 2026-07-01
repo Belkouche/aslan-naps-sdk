@@ -9,7 +9,7 @@ if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     Aslan NAPS Terminal CLI v{Version}
     Sunmi P2/P3 (TCP) + Ingenico Lane/3000 (USB Serial)
 
-    Usage: lane3000 <command> [options]
+    Usage: aslan-naps <command> [options]
 
     Commands:
       pay <amount>        Process a payment (MAD, e.g. 10.00)
@@ -27,10 +27,10 @@ if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
       --port <name>       Specify serial port (COM3, /dev/cu.usbmodem1201)
 
     Examples:
-      lane3000 test
-      lane3000 pay 10.00
-      lane3000 cancel 123456
-      lane3000 test --tcp 192.168.1.100:4444
+      aslan-naps test
+      aslan-naps pay 10.00
+      aslan-naps cancel 123456
+      aslan-naps test --tcp 192.168.1.100:4444
     """);
     return 0;
 }
@@ -119,7 +119,7 @@ try
 
         case "pay":
             if (arg1 == null || !decimal.TryParse(arg1, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var amt))
-            { Console.WriteLine("Usage: lane3000 pay <amount>"); return 1; }
+            { Console.WriteLine("Usage: aslan-naps pay <amount>"); return 1; }
             Console.WriteLine($"Payment: {amt:F2} MAD...");
             var pay = await client.PayAsync(amt);
             if (pay.IsSuccess)
@@ -129,7 +129,7 @@ try
             return pay.IsSuccess ? 0 : 1;
 
         case "cancel":
-            if (arg1 == null) { Console.WriteLine("Usage: lane3000 cancel <stan>"); return 1; }
+            if (arg1 == null) { Console.WriteLine("Usage: aslan-naps cancel <stan>"); return 1; }
             Console.WriteLine($"Cancel STAN={arg1}...");
             var cancel = await client.CancelAsync(arg1);
             Console.WriteLine(cancel.ResponseCode is "000" or "480" ? $"OK CR={cancel.ResponseCode}" : $"FAIL CR={cancel.ResponseCode}");
