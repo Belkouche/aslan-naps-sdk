@@ -59,8 +59,7 @@ public class NapsClient : IDisposable
         {
             return new PaymentResult { ResponseCode = "TIMEOUT", ResponseMessage = "Payment request timed out" };
         }
-
-        var payFields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(payResp));
+        var payFields = LtvProtocol.ParseMessage(payResp);
         var cr = payFields.GetValueOrDefault(LtvProtocol.TagCr);
 
         if (!LtvProtocol.IsApproved(cr))
@@ -75,7 +74,7 @@ public class NapsClient : IDisposable
         try
         {
             var confResp = await _transport.SendReceiveAsync(confMsg, _options.ConfirmationTimeoutMs, ct);
-            var confFields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(confResp));
+            var confFields = LtvProtocol.ParseMessage(confResp);
             var confCr = confFields.GetValueOrDefault(LtvProtocol.TagCr);
 
             var result = MapToResult(payFields, true);
@@ -99,7 +98,7 @@ public class NapsClient : IDisposable
         try
         {
             var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
-            var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+            var fields = LtvProtocol.ParseMessage(resp);
             return MapToResult(fields, false);
         }
         catch (TimeoutException)
@@ -112,7 +111,7 @@ public class NapsClient : IDisposable
     {
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmNetworkTest);
         var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
-        var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+        var fields = LtvProtocol.ParseMessage(resp);
         var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
         return new TestResult
         {
@@ -126,7 +125,7 @@ public class NapsClient : IDisposable
     {
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmReferencing);
         var resp = await _transport.SendReceiveAsync(msg, _options.ReferencingTimeoutMs, ct);
-        var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+        var fields = LtvProtocol.ParseMessage(resp);
         var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
         return new ReferencingResult
         {
@@ -140,7 +139,7 @@ public class NapsClient : IDisposable
     {
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmTotals);
         var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
-        var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+        var fields = LtvProtocol.ParseMessage(resp);
         var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
         return new TotalsResult
         {
@@ -154,7 +153,7 @@ public class NapsClient : IDisposable
     {
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmDuplicate);
         var resp = await _transport.SendReceiveAsync(msg, 15_000, ct);
-        var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+        var fields = LtvProtocol.ParseMessage(resp);
         return MapToResult(fields, false);
     }
 

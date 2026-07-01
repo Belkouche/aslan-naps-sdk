@@ -76,12 +76,10 @@ public class TcpSocketTransport : ITerminalTransport
             throw new IOException("Connection closed before response");
 
         rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
-        var done = buf[count - 1] == (byte)'?';
 
-        // Drain remaining chunks with a 1-second inter-chunk silence fallback.
-        // Some terminal responses (cancel, decline) omit the '?' terminator.
-        // Link to outer cts so the drain cannot extend past the overall operation deadline.
-        while (!done)
+        // '?' is the end-of-message terminator. Check the full accumulated buffer,
+        // not just the last byte of the current chunk, in case '?' lands mid-chunk.
+        while (!rawBytes.Contains((byte)'?'))
         {
             using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
             drainCts.CancelAfter(TimeSpan.FromSeconds(1));
@@ -90,7 +88,6 @@ public class TcpSocketTransport : ITerminalTransport
                 count = await stream.ReadAsync(buf, 0, buf.Length, drainCts.Token);
                 if (count == 0) break;
                 rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
-                done = buf[count - 1] == (byte)'?';
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
@@ -100,8 +97,8 @@ public class TcpSocketTransport : ITerminalTransport
 
         var response = Encoding.UTF8.GetString(rawBytes.ToArray());
 
-        // Strip trailing '?' terminator, keep content intact, re-append '!' for LtvProtocol.
-        var qPos = response.LastIndexOf('?');
+        // Strip at the '?' terminator — everything after it is noise.
+        var qPos = response.IndexOf('?');
         return (qPos >= 0 ? response.Substring(0, qPos) : response) + "!";
     }
 

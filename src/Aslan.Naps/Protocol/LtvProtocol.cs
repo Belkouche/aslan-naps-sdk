@@ -91,7 +91,10 @@ public static class LtvProtocol
 
     public static Dictionary<string, string> ParseMessage(string raw)
     {
-        var data = raw.Trim().TrimEnd('!');
+        // Strip the trailing '!' the transport appends, and any whitespace.
+        // Stop at the first '!' so receipt content after it is ignored.
+        var excl = raw.IndexOf('!');
+        var data = (excl >= 0 ? raw.Substring(0, excl) : raw).Trim();
         var fields = new Dictionary<string, string>();
         var pos = 0;
 
