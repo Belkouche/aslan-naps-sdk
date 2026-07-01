@@ -116,6 +116,7 @@ using var client = new NapsClient(new NapsClientOptions
 
     TcpConnectTimeoutMs  = 120_000,  // 2 min (default)
     PaymentTimeoutMs     = 120_000,  // 2 min (default)
+    ConfirmationTimeoutMs =  40_000, // 40 s  (default — protocol deadline)
     TestTimeoutMs        =  30_000,  // 30 s  (default)
     ReferencingTimeoutMs =  60_000,  // 1 min (default)
 });
@@ -268,7 +269,8 @@ static string[]  NapsClient.ListPorts()
 | `SerialBaudRate` | `int` | `115200` | Serial baud rate (USB only) |
 | `RegisterId` | `string` | `"01"` | 2-digit register ID for NAPS NCAI field |
 | `CashierId` | `string` | `"00001"` | 5-digit cashier ID for NAPS NCAI field |
-| `PaymentTimeoutMs` | `int` | `120000` | Payment phase timeout ms |
+| `PaymentTimeoutMs` | `int` | `120000` | Phase-1 payment read timeout ms |
+| `ConfirmationTimeoutMs` | `int` | `40000` | Phase-2 confirmation read timeout ms |
 | `TestTimeoutMs` | `int` | `30000` | Network test / cancel timeout ms |
 | `ReferencingTimeoutMs` | `int` | `60000` | Referencing timeout ms |
 

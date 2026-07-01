@@ -22,6 +22,8 @@ public class NapsClientOptions
     public string CashierId { get; set; } = "00001";
     /// <summary>Payment timeout in ms. Default 120s.</summary>
     public int PaymentTimeoutMs { get; set; } = 120_000;
+    /// <summary>Phase-2 confirmation read timeout in ms. Default 40s (protocol deadline).</summary>
+    public int ConfirmationTimeoutMs { get; set; } = 40_000;
     /// <summary>Network test timeout in ms. Default 30s.</summary>
     public int TestTimeoutMs { get; set; } = 30_000;
     /// <summary>Referencing timeout in ms. Default 60s.</summary>

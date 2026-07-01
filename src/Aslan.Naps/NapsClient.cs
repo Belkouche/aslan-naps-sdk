@@ -74,7 +74,7 @@ public class NapsClient : IDisposable
         var confMsg = LtvProtocol.BuildConfirmation(stan, ncai, ns);
         try
         {
-            var confResp = await _transport.SendReceiveAsync(confMsg, 15_000, ct);
+            var confResp = await _transport.SendReceiveAsync(confMsg, _options.ConfirmationTimeoutMs, ct);
             var confFields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(confResp));
             var confCr = confFields.GetValueOrDefault(LtvProtocol.TagCr);
 
