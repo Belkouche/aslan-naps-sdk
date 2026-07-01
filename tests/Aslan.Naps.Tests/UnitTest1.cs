@@ -62,11 +62,11 @@ public class LtvProtocolTests
     }
 
     [Fact]
-    public void BuildMessage_NetworkTest()
+    public void BuildMessage_NetworkTest_UsesConnectionFraming()
     {
         var msg = LtvProtocol.BuildMessage("009");
         Assert.StartsWith("001003009", msg);
-        Assert.EndsWith("!", msg);
+        Assert.False(msg.EndsWith("!", StringComparison.Ordinal));
         Assert.Contains("003007", msg); // NCAI tag
         Assert.Contains("004006", msg); // NS tag
     }
@@ -76,9 +76,9 @@ public class LtvProtocolTests
     {
         var msg = LtvProtocol.BuildMessage("001", amountCentimes: 1000);
         Assert.StartsWith("001003001", msg);
-        Assert.Contains("002012000000001000", msg); // 10.00 MAD
+        Assert.Contains("0020041000", msg); // 10.00 MAD in centimes
         Assert.Contains("012003504", msg); // Currency MAD
-        Assert.EndsWith("!", msg);
+        Assert.False(msg.EndsWith("!", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class LtvProtocolTests
         var msg = LtvProtocol.BuildConfirmation("654321");
         Assert.StartsWith("001003002", msg); // TM=002
         Assert.Contains("008006654321", msg); // STAN
-        Assert.EndsWith("!", msg);
+        Assert.False(msg.EndsWith("!", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -150,7 +150,7 @@ public class LtvProtocolTests
         var msg = LtvProtocol.BuildMessage("001", ncai: "0200005", ns: "000042", amountCentimes: 5000);
         var fields = LtvProtocol.ParseMessage(msg);
         Assert.Equal("001", fields["001"]);
-        Assert.Equal("000000005000", fields["002"]);
+        Assert.Equal("5000", fields["002"]);
         Assert.Equal("0200005", fields["003"]);
         Assert.Equal("000042", fields["004"]);
         Assert.Equal("504", fields["012"]);
