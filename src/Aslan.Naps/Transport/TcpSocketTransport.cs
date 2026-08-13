@@ -58,8 +58,7 @@ public class TcpSocketTransport : ITerminalTransport
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeoutMs);
 
-        // The terminal uses '?' as end-of-message terminator (not '!').
-        // Read until '?' arrives.
+        // NapsPay uses '!' as end-of-message terminator on TCP responses.
         var sb = new StringBuilder();
         var buf = new byte[4096];
         try
@@ -69,7 +68,7 @@ public class TcpSocketTransport : ITerminalTransport
                 var read = await stream.ReadAsync(buf, 0, buf.Length, cts.Token);
                 if (read == 0) break;
                 sb.Append(Encoding.ASCII.GetString(buf, 0, read));
-                if (sb.ToString().Contains('?')) break;
+                if (sb.ToString().Contains('!')) break;
             }
         }
         catch (OperationCanceledException)
@@ -77,9 +76,7 @@ public class TcpSocketTransport : ITerminalTransport
             throw new TimeoutException($"No response from terminal within {timeoutMs}ms");
         }
 
-        // '!' appears inside receipt lines as a separator — strip them.
-        // Replace trailing '?' with '!' so LtvProtocol.ParseMessage sees a standard terminator.
-        return sb.ToString().Replace("!", "").TrimEnd('?') + "!";
+        return sb.ToString().TrimEnd('!')  + "!";
     }
 
     public void Dispose() => Disconnect();

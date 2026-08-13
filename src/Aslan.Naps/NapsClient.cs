@@ -89,16 +89,24 @@ public class NapsClient : IDisposable
         }
     }
 
-    public async Task<PaymentResult> CancelAsync(string stan, CancellationToken ct = default)
+    /// <summary>
+    /// Cancel a previously authorized payment.
+    /// NapsPay v5.4.4+ requires the original amount (TAG 002) in the cancellation frame.
+    /// </summary>
+    public async Task<PaymentResult> CancelAsync(string stan, long? amountCentimes = null, CancellationToken ct = default)
     {
         var ncai = _options.RegisterId + _options.CashierId;
         var ns = NextSequence();
         var msg = LtvProtocol.BuildMessage(LtvProtocol.TmCancellation, ncai, ns,
+            amountCentimes: amountCentimes,
             extraFields: new[] { (LtvProtocol.TagStan, stan) });
 
         var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
         var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
-        return MapToResult(fields, false);
+        var mt = fields.GetValueOrDefault(LtvProtocol.TagTm);
+        var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
+        var isCancelSuccess = mt is "103" or "104" && cr == "000";
+        return MapToResult(fields, isCancelSuccess);
     }
 
     public async Task<TestResult> NetworkTestAsync(CancellationToken ct = default)
