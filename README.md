@@ -176,8 +176,9 @@ if (pay.Stan != null)
 {
     try
     {
-        var cancel = await client.CancelAsync(stan: pay.Stan);
-        Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
+        // NapsPay v5.4.4+: pass the original amount in centimes
+    var cancel = await client.CancelAsync(stan: pay.Stan, amountCentimes: (long)(pay.AmountMad * 100));
+    Console.WriteLine(cancel.IsSuccess ? "Voided" : $"Void failed RC={cancel.ResponseCode}");
     }
     catch (Exception ex)
     {
@@ -245,7 +246,7 @@ bool client.IsConnected
 
 // Transactions
 Task<PaymentResult>     PayAsync(decimal amountMad, string? orderId = null, CancellationToken ct = default)
-Task<PaymentResult>     CancelAsync(string stan, CancellationToken ct = default)
+Task<PaymentResult>     CancelAsync(string stan, long? amountCentimes = null, CancellationToken ct = default)
 Task<PaymentResult>     DuplicateReceiptAsync(CancellationToken ct = default)
 Task<TestResult>        NetworkTestAsync(CancellationToken ct = default)
 Task<ReferencingResult> ReferencingAsync(CancellationToken ct = default)
@@ -322,7 +323,7 @@ dotnet run --project src/Aslan.Naps.Cli -c Release -- <command> [options]
 | Command | Description |
 |---|---|
 | `pay <amount>` | Process a payment (MAD, e.g. `10.00`) |
-| `cancel <stan>` | Void a transaction by STAN |
+| `cancel <stan> [amount]` | Void a transaction by STAN (amount in MAD required on NapsPay v5.4.4+) |
 | `test` | Ping the terminal |
 | `ref` | Load merchant parameters |
 | `totals` | End-of-day settlement totals |
@@ -356,8 +357,8 @@ aslan-naps pay 150.00 --port /dev/cu.usbmodem1201
 aslan-naps ports
 aslan-naps test --tcp 192.168.1.100:4444
 
-# Void by STAN
-aslan-naps cancel 000123 --tcp 192.168.1.100:4444
+# Void by STAN (NapsPay v5.4.4+: include the original amount in MAD)
+aslan-naps cancel 000123 10.00 --tcp 192.168.1.100:4444
 ```
 
 ---
@@ -379,6 +380,16 @@ dotnet build
 dotnet test
 dotnet pack src/Aslan.Naps -c Release
 ```
+
+---
+
+## Changelog
+
+### v1.0.7 — NapsPay v5.4.4 compatibility
+- **`TcpSocketTransport`**: fixed response frame terminator (`?` → `!`). Prior versions would wait the full 95 s timeout on every TCP transaction before failing.
+- **`CancelAsync`**: added optional `amountCentimes` parameter. NapsPay v5.4.4 requires TAG 002 (Amount) in cancellation requests — without it the terminal crashes. Pass the original transaction amount in centimes.
+- **`CancelAsync`**: response message type `104` (correction) is now accepted alongside `103` (cancellation) as a successful void.
+- **CLI**: `cancel` command now accepts an optional amount argument: `aslan-naps cancel <stan> [amount_mad]`.
 
 ---
 
