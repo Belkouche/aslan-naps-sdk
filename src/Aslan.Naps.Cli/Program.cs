@@ -13,7 +13,7 @@ if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
 
     Commands:
       pay <amount>        Process a payment (MAD, e.g. 10.00)
-      cancel <stan>       Cancel/void a transaction by STAN
+      cancel <stan> [amt] Cancel/void a transaction by STAN (amt in MAD, required on v5.4.4+)
       test                Network connectivity test
       ref                 Load merchant parameters (referencing)
       totals              End-of-day settlement totals
@@ -129,11 +129,20 @@ try
             return pay.IsSuccess ? 0 : 1;
 
         case "cancel":
-            if (arg1 == null) { Console.WriteLine("Usage: aslan-naps cancel <stan>"); return 1; }
-            Console.WriteLine($"Cancel STAN={arg1}...");
-            var cancel = await client.CancelAsync(arg1);
-            Console.WriteLine(cancel.ResponseCode is "000" or "480" ? $"OK CR={cancel.ResponseCode}" : $"FAIL CR={cancel.ResponseCode}");
-            return cancel.ResponseCode is "000" or "480" ? 0 : 1;
+            if (arg1 == null) { Console.WriteLine("Usage: aslan-naps cancel <stan> [amount_mad]"); return 1; }
+            // arg2 is optional amount in MAD (e.g. 10.00) — required by NapsPay v5.4.4
+            long? cancelAmount = null;
+            if (args.Length > (options.Transport == TransportType.TcpSocket ? 4 : 3))
+            {
+                var amtStr = args.Last(a => !a.StartsWith("--"));
+                if (amtStr != arg1 && decimal.TryParse(amtStr, System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var amtMad))
+                    cancelAmount = (long)Math.Round(amtMad * 100);
+            }
+            Console.WriteLine($"Cancel STAN={arg1}{(cancelAmount.HasValue ? $" Amount={cancelAmount}c" : "")}...");
+            var cancel = await client.CancelAsync(arg1, cancelAmount);
+            Console.WriteLine(cancel.IsSuccess ? $"OK CR={cancel.ResponseCode}" : $"FAIL CR={cancel.ResponseCode}");
+            return cancel.IsSuccess ? 0 : 1;
 
         case "totals":
             Console.WriteLine("Totals (TM=010)...");

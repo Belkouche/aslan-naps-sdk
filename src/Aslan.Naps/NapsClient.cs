@@ -88,18 +88,24 @@ public class NapsClient : IDisposable
         }
     }
 
-    public async Task<PaymentResult> CancelAsync(string stan, CancellationToken ct = default)
+    // v5.4.4: TAG 002 (Amount) is now required in cancellation requests.
+    public async Task<PaymentResult> CancelAsync(string stan, long? amountCentimes = null, CancellationToken ct = default)
     {
         var ncai = _options.RegisterId + _options.CashierId;
         var ns = NextSequence();
-        var msg = LtvProtocol.BuildMessage(LtvProtocol.TmCancellation, ncai, ns,
-            extraFields: new[] { (LtvProtocol.TagStan, stan) });
+        var extra = new List<(string, string)> { (LtvProtocol.TagStan, stan) };
+        if (amountCentimes.HasValue && amountCentimes.Value > 0)
+            extra.Add((LtvProtocol.TagMt, amountCentimes.Value.ToString()));
+        var msg = LtvProtocol.BuildMessage(LtvProtocol.TmCancellation, ncai, ns, extraFields: extra);
 
         try
         {
             var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
             var fields = LtvProtocol.ParseMessage(resp);
-            return MapToResult(fields, false);
+            // v5.4.4 responses: 103 = cancellation, 104 = correction — both accepted.
+            var rc = fields.GetValueOrDefault(LtvProtocol.TagCr);
+            var approved = rc is "000" or "480";
+            return MapToResult(fields, false) with { IsSuccess = approved };
         }
         catch (TimeoutException)
         {

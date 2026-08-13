@@ -77,9 +77,8 @@ public class TcpSocketTransport : ITerminalTransport
 
         rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
 
-        // '?' is the end-of-message terminator. Check the full accumulated buffer,
-        // not just the last byte of the current chunk, in case '?' lands mid-chunk.
-        while (!rawBytes.Contains((byte)'?'))
+        // '!' is the end-of-message terminator in the NapsPay ECR protocol.
+        while (!rawBytes.Contains((byte)'!'))
         {
             using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
             drainCts.CancelAfter(TimeSpan.FromSeconds(1));
@@ -97,9 +96,9 @@ public class TcpSocketTransport : ITerminalTransport
 
         var response = Encoding.UTF8.GetString(rawBytes.ToArray());
 
-        // Strip at the '?' terminator — everything after it is noise.
-        var qPos = response.IndexOf('?');
-        return (qPos >= 0 ? response.Substring(0, qPos) : response) + "!";
+        // Strip at the '!' terminator — everything after it is noise.
+        var excl = response.IndexOf('!');
+        return (excl >= 0 ? response.Substring(0, excl) : response) + "!";
     }
 
     public void Dispose() => Disconnect();
