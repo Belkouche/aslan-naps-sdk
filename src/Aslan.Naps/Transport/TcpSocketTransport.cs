@@ -58,6 +58,7 @@ public class TcpSocketTransport : ITerminalTransport
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeoutMs);
 
+        // NapsPay uses '!' as end-of-message terminator on TCP responses.
         var rawBytes = new List<byte>(4096);
         var buf = new byte[4096];
 
@@ -77,7 +78,7 @@ public class TcpSocketTransport : ITerminalTransport
 
         rawBytes.AddRange(new ArraySegment<byte>(buf, 0, count));
 
-        // '!' is the end-of-message terminator in the NapsPay ECR protocol.
+        // Drain remaining chunks until '!' terminator or 1-second silence.
         while (!rawBytes.Contains((byte)'!'))
         {
             using var drainCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);

@@ -88,7 +88,10 @@ public class NapsClient : IDisposable
         }
     }
 
-    // v5.4.4: TAG 002 (Amount) is now required in cancellation requests.
+    /// <summary>
+    /// Cancel a previously authorized payment.
+    /// NapsPay v5.4.4+ requires the original amount (TAG 002) in the cancellation frame.
+    /// </summary>
     public async Task<PaymentResult> CancelAsync(string stan, long? amountCentimes = null, CancellationToken ct = default)
     {
         var ncai = _options.RegisterId + _options.CashierId;
@@ -101,11 +104,12 @@ public class NapsClient : IDisposable
         try
         {
             var resp = await _transport.SendReceiveAsync(msg, _options.TestTimeoutMs, ct);
-            var fields = LtvProtocol.ParseMessage(resp);
-            // v5.4.4 responses: 103 = cancellation, 104 = correction — both accepted.
-            var rc = fields.GetValueOrDefault(LtvProtocol.TagCr);
-            var approved = rc is "000" or "480";
-            return MapToResult(fields, false) with { IsSuccess = approved };
+            var fields = LtvProtocol.ParseMessage(LtvProtocol.ExtractLastMessage(resp));
+            // v5.4.4: MT=103 = cancellation, MT=104 = correction — both with CR=000 are success.
+            var mt = fields.GetValueOrDefault(LtvProtocol.TagTm);
+            var cr = fields.GetValueOrDefault(LtvProtocol.TagCr);
+            var isCancelSuccess = (mt is "103" or "104") && cr == "000";
+            return MapToResult(fields, isCancelSuccess);
         }
         catch (TimeoutException)
         {
